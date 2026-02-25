@@ -110,46 +110,50 @@ def main():
         type=Path,
         required=True,
         help="Path to the namespace directory (e.g., .../namespace=0)",
+        default="/corral-tacc/utexas/DBS25003/optimized_enwiki_2025_wikiq_output.parquet/'namespace=0'"
     )
     parser.add_argument(
         "-id", "--article-ids-file",
         type=Path,
         required=True,
         help="Path to a text file with one articleid per line",
+        default="pageids.txt"
     )
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("revision_stats.csv"),
-        help="Path to output CSV file (default: revision_stats.csv)",
+        default=Path("parpar.csv"),
+        help="Path to output CSV file (default: parpar.csv)"
     )
     parser.add_argument(
         "--output-json",
         type=Path,
-        default=Path("revision_stats.json"),
-        help="Path to output JSON file tracking articleids (default: revision_stats.json)",
+        default=Path("parpar.json"),
+        help="Path to output JSON file tracking articleids (default: parpar.json)"
     )
     parser.add_argument(
         "-t","--test",
         action="store_true",
-        help="Test mode: only process the first 5 article IDs",
+        help="Test mode: only process the first 5 article IDs"
     )
     parser.add_argument(
         "-p", "--parallel",
         type=int,
         default=None,
         metavar="N",
-        help="Number of parallel workers (uses ProcessPoolExecutor)",
+        help="Number of parallel workers (uses ProcessPoolExecutor)"
     )
     args = parser.parse_args()
 
     # Validate inputs
+    print("> Validating inputs...")
     if not args.namespace_dir.is_dir():
         parser.error(f"Namespace directory does not exist: {args.namespace_dir}")
     if not args.article_ids_file.is_file():
         parser.error(f"Article IDs file does not exist: {args.article_ids_file}")
 
     # Load article IDs
+    print("> Loading article IDs...")
     article_ids = load_article_ids(args.article_ids_file)
     if not article_ids:
         parser.error("No article IDs found in the input file")
@@ -160,6 +164,8 @@ def main():
 
     print(f"Loaded {len(article_ids)} article IDs")
     print(f"Scanning parquet files in {args.namespace_dir}")
+
+    input("Start processing? (Press Enter to continue)")
 
     # Compute statistics
     if args.parallel:
@@ -174,7 +180,7 @@ def main():
 
     # Write CSV output
     stats.to_csv(args.output)
-    print(f"Wrote statistics to {args.output}")
+    print(f"Wrote parquet-parsed statistics to {args.output}")
 
     # Write JSON output
     json_output = {
