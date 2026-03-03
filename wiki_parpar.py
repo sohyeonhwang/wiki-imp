@@ -198,6 +198,11 @@ def main():
     csv_path = f"{args.output}_{run_ts}_{'parallel' if args.parallel else 'sequential'}.csv"
     json_path = f"{args.output}_{run_ts}_{'parallel' if args.parallel else 'sequential'}.json"
 
+    if "afd" in str(args.article_ids_file).lower():
+        print("> Detected AFD discussion page IDs based on input filename.")
+        csv_path = f"{csv_path.replace('.csv', '_afd.csv')}"
+        json_path = f"{json_path.replace('.json', '_afd.json')}"
+
     # Write CSV output
     stats.to_csv(csv_path)
     print(f"> Wrote parquet-parsed output to {csv_path}")
