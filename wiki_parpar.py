@@ -47,18 +47,18 @@ def compute_revision_stats(
     if not combined.empty:
         stats = combined.groupby("articleid").agg(
             earliest_revision=("date_time", "min"),
-            revision_count=("date_time", "count"),
-            editorid_count=("editorid", "nunique"),
+            revision_count=("revid", "count"),
+            editor_nunique=("editor", "nunique"),
         )
     else:
         stats = pd.DataFrame(
-            columns=["earliest_revision", "revision_count", "editorid_count"]
+            columns=["earliest_rev", "rev_count", "editor_nunique"]
         )
         stats.index.name = "articleid"
 
     # Determine found vs not found
-    found_ids = [aid for aid in article_ids if aid in stats.index]
-    not_found_ids = [aid for aid in article_ids if aid not in stats.index]
+    found_ids = [aid for aid in article_ids if aid in set(stats.index)]
+    not_found_ids = [aid for aid in article_ids if aid not in set(stats.index)]
 
     # Reindex to include all requested article IDs (missing ones get NaN)
     stats = stats.reindex(article_ids)
@@ -110,7 +110,7 @@ def main():
         type=Path,
         required=True,
         help="Path to the namespace directory (e.g., .../namespace=0)",
-        default="/corral-tacc/utexas/DBS25003/optimized_enwiki_2025_wikiq_output.parquet/'namespace=0'"
+        default="/scratch/10114/nathante/global_data/'namespace=0'"
     )
     parser.add_argument(
         "-id", "--article-ids-file",
@@ -134,7 +134,7 @@ def main():
     parser.add_argument(
         "-t","--test",
         action="store_true",
-        help="Test mode: only process the first 5 article IDs"
+        help="Test mode: only process the first 50 article IDs"
     )
     parser.add_argument(
         "-p", "--parallel",
@@ -147,8 +147,8 @@ def main():
 
     # Validate inputs
     print("> Validating inputs...")
-    if not args.namespace_dir.is_dir():
-        parser.error(f"Namespace directory does not exist: {args.namespace_dir}")
+    #if not args.namespace_dir.is_dir():
+    #    parser.error(f"Namespace directory does not exist: {args.namespace_dir}")
     if not args.article_ids_file.is_file():
         parser.error(f"Article IDs file does not exist: {args.article_ids_file}")
 
@@ -160,16 +160,16 @@ def main():
 
     if args.test:
         article_ids = article_ids[:50]
-        print(f"Test mode: sliced to {len(article_ids)} article IDs")
+        print(f"> Test mode: sliced to {len(article_ids)} article IDs")
 
-    print(f"Loaded {len(article_ids)} article IDs")
-    print(f"Scanning parquet files in {args.namespace_dir}")
+    print(f"> Loaded {len(article_ids)} article IDs")
+    print(f"> Scanning parquet files in {args.namespace_dir}")
 
-    input("Start processing? (Press Enter to continue)")
+    input("> Start processing? (Press Enter to continue)")
 
     # Compute statistics
     if args.parallel:
-        print(f"Using {args.parallel} parallel workers")
+        print(f"> Using {args.parallel} parallel workers")
         stats, found_ids, not_found_ids = compute_revision_stats_parallel(
             args.namespace_dir, article_ids, args.parallel
         )
@@ -180,7 +180,7 @@ def main():
 
     # Write CSV output
     stats.to_csv(args.output)
-    print(f"Wrote parquet-parsed statistics to {args.output}")
+    print(f"> Wrote parquet-parsed statistics to {args.output}")
 
     # Write JSON output
     json_output = {
