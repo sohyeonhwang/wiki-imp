@@ -147,6 +147,8 @@ def main():
     )
     args = parser.parse_args()
 
+    print("\n\n\n\n=== Wikipedia Revision Statistics Parser ===\n")
+
     # Validate inputs
     run_ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     print(f"> Run: {run_ts}")
@@ -154,7 +156,7 @@ def main():
     #if not args.namespace_dir.is_dir():
     #    parser.error(f"Namespace directory does not exist: {args.namespace_dir}")
     if not args.article_ids_file.is_file():
-        parser.error(f"Article IDs file does not exist: {args.article_ids_file}")
+        parser.error(f"! Article IDs file does not exist: {args.article_ids_file}")
 
     # Load article IDs
     print("> Loading article IDs...")
