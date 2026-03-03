@@ -12,6 +12,7 @@ import math
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 import pandas as pd
+import time
 
 def load_article_ids(filepath: Path) -> list[int]:
     """Load article IDs from a text file (one ID per line)."""
@@ -35,7 +36,7 @@ def compute_revision_stats(
         - List of found article IDs
         - List of not found article IDs
     """
-    columns = ["articleid", "date_time", "editorid"]
+    columns = ["articleid", "date_time", "revid","editor"]
 
     combined = pd.read_parquet(
         namespace_dir,
@@ -110,7 +111,7 @@ def main():
         type=Path,
         required=True,
         help="Path to the namespace directory (e.g., .../namespace=0)",
-        default="/scratch/10114/nathante/global_data/'namespace=0'"
+        default="/scratch/10114/nathante/global_data/enwiki_2025_wikiq_output.parquet/'namespace=0'"
     )
     parser.add_argument(
         "-id", "--article-ids-file",
@@ -174,9 +175,14 @@ def main():
             args.namespace_dir, article_ids, args.parallel
         )
     else:
+        print(f"> Processing {len(article_ids)} article IDs sequentially")
+        #time how long it takes to process sequentially
+        start_time = time.time()
         stats, found_ids, not_found_ids = compute_revision_stats(
             args.namespace_dir, article_ids
         )
+        end_time = time.time()
+        print(f"> Sequential processing took {end_time - start_time:.2f} seconds")
 
     # Write CSV output
     stats.to_csv(args.output)
