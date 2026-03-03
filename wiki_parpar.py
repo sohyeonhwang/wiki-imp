@@ -7,6 +7,7 @@ for a given list of article IDs.
 """
 
 import argparse
+from datetime import datetime
 import json
 import math
 from concurrent.futures import ProcessPoolExecutor
@@ -87,7 +88,7 @@ def compute_revision_stats_parallel(
             executor.submit(compute_revision_stats, namespace_dir, chunk)
             for chunk in chunks
         ]
-        results = [f.result() for f in futures]
+        results = [f.result() for f in futures]  #parallel run gives extra columns: earliest_rev,rev_count
 
     all_stats = pd.concat([r[0] for r in results])
     all_found = []
@@ -121,16 +122,15 @@ def main():
         default="pageids.txt"
     )
     parser.add_argument(
-        "--output",
+        "-o", "--output",
         type=Path,
-        default=Path("parpar.csv"),
-        help="Path to output CSV file (default: parpar.csv)"
+        default=Path("parpar"),
+        help="Path to output CSV file (default: parpar.csv and .json)"
     )
     parser.add_argument(
-        "--output-json",
-        type=Path,
-        default=Path("parpar.json"),
-        help="Path to output JSON file tracking articleids (default: parpar.json)"
+        "--json",
+        action="store_true",
+        help="Also output a JSON version of the output."
     )
     parser.add_argument(
         "-t","--test",
@@ -147,6 +147,8 @@ def main():
     args = parser.parse_args()
 
     # Validate inputs
+    run_ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    print(f"> Run: {run_ts}")
     print("> Validating inputs...")
     #if not args.namespace_dir.is_dir():
     #    parser.error(f"Namespace directory does not exist: {args.namespace_dir}")
@@ -160,7 +162,7 @@ def main():
         parser.error("No article IDs found in the input file")
 
     if args.test:
-        article_ids = article_ids[:50]
+        article_ids = article_ids[:500]
         print(f"> Test mode: sliced to {len(article_ids)} article IDs")
 
     print(f"> Loaded {len(article_ids)} article IDs")
@@ -171,9 +173,12 @@ def main():
     # Compute statistics
     if args.parallel:
         print(f"> Using {args.parallel} parallel workers")
+        start_time = time.time()
         stats, found_ids, not_found_ids = compute_revision_stats_parallel(
             args.namespace_dir, article_ids, args.parallel
         )
+        end_time = time.time()
+        print(f"> Parallel processing took {end_time - start_time:.2f} seconds")
     else:
         print(f"> Processing {len(article_ids)} article IDs sequentially")
         #time how long it takes to process sequentially
@@ -184,26 +189,38 @@ def main():
         end_time = time.time()
         print(f"> Sequential processing took {end_time - start_time:.2f} seconds")
 
+    # Output formatting
+    # timestamp
+    csv_path = f"{args.output}_{run_ts}_{'parallel' if args.parallel else 'sequential'}.csv"
+    json_path = f"{args.output}_{run_ts}_{'parallel' if args.parallel else 'sequential'}.json"
+
     # Write CSV output
-    stats.to_csv(args.output)
-    print(f"> Wrote parquet-parsed statistics to {args.output}")
+    stats.to_csv(csv_path)
+    print(f"> Wrote parquet-parsed output to {csv_path}")
 
     # Write JSON output
+    if args.json:
+        stats.to_json(json_path, orient="records")
+    print(f"> Wrote parquet-parsed output to {json_path}")
+
+    # Tracking what was / wasn't found
+    track_file = f"tracking_{run_ts}_{'parallel' if args.parallel else 'sequential'}.json"
     json_output = {
         "requested": article_ids,
         "found": found_ids,
         "not_found": not_found_ids,
     }
-    with open(args.output_json, "w") as f:
+    with open(track_file, "w") as f:
         json.dump(json_output, f, indent=2)
-    print(f"Wrote article ID tracking to {args.output_json}")
+    print(f"> Wrote article ID tracking to {args.track_file}")
 
     # Summary
-    print(f"\nSummary:")
+    print(f"\n> Summary:")
     print(f"  Requested: {len(article_ids)}")
     print(f"  Found: {len(found_ids)}")
     print(f"  Not found: {len(not_found_ids)}")
 
+    print("Done.\n\n\n")
 
 if __name__ == "__main__":
     main()
