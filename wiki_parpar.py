@@ -82,6 +82,7 @@ def compute_revision_stats_parallel(
         article_ids[i : i + chunk_size]
         for i in range(0, len(article_ids), chunk_size)
     ]
+    print(f"> Split {len(article_ids)} article IDs into {len(chunks)} chunks of size ~{chunk_size}")
 
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
         futures = [
@@ -147,7 +148,7 @@ def main():
     args = parser.parse_args()
 
     # Validate inputs
-    run_ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     print(f"> Run: {run_ts}")
     print("> Validating inputs...")
     #if not args.namespace_dir.is_dir():
@@ -160,6 +161,7 @@ def main():
     article_ids = load_article_ids(args.article_ids_file)
     if not article_ids:
         parser.error("No article IDs found in the input file")
+    print(f"> Note: overall {len(article_ids)} article IDs.")
 
     if args.test:
         article_ids = article_ids[:500]
@@ -204,7 +206,7 @@ def main():
     print(f"> Wrote parquet-parsed output to {json_path}")
 
     # Tracking what was / wasn't found
-    track_file = f"tracking_{run_ts}_{'parallel' if args.parallel else 'sequential'}.json"
+    track_file = f"output/tracking_{run_ts}_{'parallel' if args.parallel else 'sequential'}.json"
     json_output = {
         "requested": article_ids,
         "found": found_ids,
@@ -212,7 +214,7 @@ def main():
     }
     with open(track_file, "w") as f:
         json.dump(json_output, f, indent=2)
-    print(f"> Wrote article ID tracking to {args.track_file}")
+    print(f"> Wrote article ID tracking to {track_file}")
 
     # Summary
     print(f"\n> Summary:")
