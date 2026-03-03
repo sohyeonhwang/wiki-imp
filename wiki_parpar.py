@@ -124,7 +124,7 @@ def main():
     parser.add_argument(
         "-o", "--output",
         type=Path,
-        default=Path("parpar"),
+        default=Path("output/parpar"),
         help="Path to output CSV file (default: parpar.csv and .json)"
     )
     parser.add_argument(

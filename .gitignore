@@ -2,3 +2,4 @@ _*.py
 *.pyc
 __pycache__/
 wiki_parpar_local.py
+output/
