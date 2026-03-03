@@ -224,7 +224,7 @@ def main():
     print(f"  Found: {len(found_ids)}")
     print(f"  Not found: {len(not_found_ids)}")
 
-    print("Done.\n\n\n")
+    print("=== Done. ===\n\n\n")
 
 if __name__ == "__main__":
     main()
